@@ -1,0 +1,59 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: Agent-1
+    container:
+      image: ${{ vars.DOCKER_IMAGE }}   # using variable from GitHub
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Run tests
+        run: mvn test --file pom.xml
+
+      - name: Run Trivy FS Scan (TXT + HTML)
+        run: |
+          # Plain text report
+          trivy fs --severity CRITICAL,HIGH --format table -o trivy-fs-report.txt .
+
+          # Download official HTML template and generate HTML report
+          curl -sSL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl -o html.tpl
+          trivy fs --severity CRITICAL,HIGH --format template --template "@html.tpl" -o trivy-fs-report.html .
+
+      - name: Upload Trivy Scan Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-fs-reports
+          path: |
+            trivy-fs-report.txt
+            trivy-fs-report.html
+
+      - name: Run Gitleaks Scan
+        run: |
+          gitleaks detect --no-banner --redact \
+            --report-format json \
+            --report-path gitleaks-report.json
+
+      - name: Upload Gitleaks Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+
+  docker:
+    runs-on: Agent-1   # runs directly on the runner, not inside container
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker Build
+        run: docker build -t myapp:latest .
