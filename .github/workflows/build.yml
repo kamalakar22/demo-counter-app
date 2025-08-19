@@ -32,7 +32,7 @@ jobs:
     - name: Run tests
       run: mvn test --file pom.xml
     - name: upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: my-app
         path: target/*.jar
