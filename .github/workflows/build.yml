@@ -11,7 +11,6 @@ jobs:
     runs-on: Agent-1
     container:
       image: kamalakar2210/java-ci-tools:latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -21,18 +20,35 @@ jobs:
       - name: Run tests
         run: mvn test --file pom.xml
 
-      # 🔍 Trivy FS Scan (scan repo for vulnerabilities, misconfigurations)
       - name: Run Trivy FS Scan
-        uses: aquasecurity/trivy-action@0.20.0
-        with:
-          scan-type: fs
-          path: .
-          severity: CRITICAL, HIGH
-          format: table
-          exit-code: 0   # fail if vulnerabilities found
+        run: |
+          trivy fs . \
+            --severity CRITICAL,HIGH \
+            --format table \
+            --output trivy-fs-report.txt
+          trivy fs. \
+            --severity CRITICAL, HIGH \
+            --format html \
+            --output trivy-fs-report.html
 
-      # 🔒 Gitleaks Scan (detect secrets in repo)
-      - name: Run Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
+      - name: Upload Trivy Scan Reports
+        uses: actions/upload-artifact@v4
         with:
-          args: detect --source. --no-git --redact --report-format json --report-path gitleaks-report.json
+          name: trivy-fs-reports
+          path: |
+            trivy-fs-report.txt
+            trivy-fs-report.html
+
+      - name: Run Gitleaks Scan
+        run: |
+          gitleaks detect --no-banner --redact \
+            --report-format json \
+            --report-path gitleaks-report.json
+
+      - name: Upload Gitleaks Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+
+  
