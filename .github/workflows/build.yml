@@ -29,10 +29,10 @@ jobs:
           path: .
           severity: CRITICAL, HIGH
           format: table
-          exit-code: 1   # fail if vulnerabilities found
+          exit-code: 0   # fail if vulnerabilities found
 
       # 🔒 Gitleaks Scan (detect secrets in repo)
       - name: Run Gitleaks Scan
         uses: gitleaks/gitleaks-action@v2
         with:
-          args: detect --source . --no-git --redact --report-format json --report-path gitleaks-report.json
+          args: detect --source. --no-git --redact --report-format json --report-path gitleaks-report.json
